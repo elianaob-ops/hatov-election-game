@@ -34,6 +34,17 @@ if(!db.prepare('SELECT value FROM app_settings WHERE key=?').get('debbie-brand-d
  db.prepare('UPDATE games SET title=?,deadline=? WHERE id IN (?,?) OR title=?').run(config.ballotTitle,Date.parse(config.deadline),lobbyId,'6b15e45d25e5f98673e8d956ee980ae293102138f5721093','הקלפי של בול בקלפי');
  db.prepare('INSERT INTO app_settings VALUES(?,?)').run('debbie-brand-deadline-v1','done');
 }
+// Rename only this community's default ballot and default administrator label.
+// Preserve the deadline, participant accounts, approvals, and saved forecasts.
+if(!db.prepare('SELECT value FROM app_settings WHERE key=?').get('hatov-family-brand-v1')){
+ db.exec('BEGIN IMMEDIATE');
+ try{
+  db.prepare('UPDATE games SET title=? WHERE id=? AND title=?').run(config.ballotTitle,lobbyId,'הקלפי של הטוב בהתגלמותו');
+  db.prepare("UPDATE players SET name=? WHERE name=? AND token IN (SELECT id FROM accounts WHERE role='admin')").run(config.brand,'הטוב בהתגלמותו');
+  db.prepare('INSERT INTO app_settings VALUES(?,?)').run('hatov-family-brand-v1','done');
+  db.exec('COMMIT');
+ }catch(e){db.exec('ROLLBACK');throw e;}
+}
 export function validSeats(a,n){return Array.isArray(a)&&a.length===n&&a.every(x=>Number.isInteger(x)&&(x===0||(x>=4&&x<=120)))&&a.reduce((s,x)=>s+x,0)===120;}
 export const validPrediction=validSeats;
 export function score(a,b){return 120-a.reduce((sum,x,i)=>sum+Math.abs(x-b[i]),0)/2;}
@@ -49,7 +60,7 @@ const server=http.createServer(async(req,res)=>{
  const reply=(code,data)=>{res.writeHead(code,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data));};
  try{
  const url=new URL(req.url,'http://localhost');
- const asset=url.pathname.match(/^\/assets\/((?:characters-[123]|character-pairs|raam-pair|haredi-pair|israel-flag|fingers-crossed)\.png|community-icon\.jpg)$/);
+ const asset=url.pathname.match(/^\/assets\/((?:characters-[123]|character-pairs|raam-pair|haredi-pair|israel-flag|fingers-crossed|community-icon)\.png|community-icon\.jpg)$/);
  if(asset&&req.method==='GET'){res.writeHead(200,{'Content-Type':asset[1].endsWith('.jpg')?'image/jpeg':'image/png','Cache-Control':'public, max-age=3600','X-Content-Type-Options':'nosniff'});return res.end(readFileSync(new URL('./public/assets/'+asset[1],import.meta.url)));}
  if(url.pathname==='/api/health'&&req.method==='GET')return reply(200,{ok:true});
  const staticFiles={'/app.js':'text/javascript; charset=utf-8','/community.js':'text/javascript; charset=utf-8','/style.css':'text/css; charset=utf-8','/parties.json':'application/json; charset=utf-8','/config.json':'application/json; charset=utf-8'};

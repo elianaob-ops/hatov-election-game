@@ -22,7 +22,7 @@ export async function communityAuth(db){
   const hash=unchanged?existing.password_hash:await passwordHash(adminPassword);
   if(existing&&!unchanged)db.prepare('DELETE FROM sessions WHERE account=?').run(id);
   db.prepare("INSERT INTO accounts VALUES(?,?,?,'approved','admin',?) ON CONFLICT(id) DO UPDATE SET password_hash=excluded.password_hash").run(id,adminName,hash,Date.now());
-  db.prepare('INSERT OR IGNORE INTO players VALUES(?,?,?)').run(id,'הטוב בהתגלמותו',Date.now());
+  db.prepare('INSERT OR IGNORE INTO players VALUES(?,?,?)').run(id,'הטוב בהתגלמותו וב"ב',Date.now());
   db.prepare("DELETE FROM sessions WHERE account IN(SELECT id FROM accounts WHERE role='admin' AND username<>?)").run(adminName);
   db.prepare("UPDATE accounts SET status='rejected' WHERE role='admin' AND username<>?").run(adminName);
   db.prepare("UPDATE accounts SET status='approved' WHERE id=?").run(id);
