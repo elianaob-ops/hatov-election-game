@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#193f35"><meta name="description" content="נרשמים, בוחרים מנדטים דרך הדמויות ומגלים מי הכי קרוב לתוצאות."><title>הטוב בהתגלמותו — משחק המנדטים</title><link rel="icon" type="image/jpeg" href="/assets/community-icon.jpg"><link rel="apple-touch-icon" href="/assets/community-icon.jpg"><link rel="stylesheet" href="/style.css"><script src="/community.js" defer></script><script src="/app.js" defer></script></head>
+<body>
+ <header><a class="brand" href="/"><img src="/assets/community-icon.jpg" alt="" class="brand-icon">הטוב בהתגלמותו</a><nav aria-label="תפריט ראשי"><a href="/characters">המפלגות</a><span class="pill">120 מנדטים. ניחוש אחד.</span></nav></header>
+ <div id="message" role="status" aria-live="polite"></div>
+ <main id="app"><p class="loading">פותחים את הקלפי…</p></main>
+ <footer>משחק ניחושים חברתי · נקודות בלבד, ללא כסף · ללא שיוך פוליטי <a href="/manage">ניהול תחרות</a></footer>
+ <dialog id="seat-dialog" aria-labelledby="dialog-title"><form id="seat-form">
+  <div class="dialog-top"><span class="eyebrow">הניחוש שלכם</span><button type="button" id="close-dialog" class="icon-button" aria-label="סגירה">×</button></div>
+  <div id="dialog-portrait" class="portrait dialog-portrait" role="img"></div><h2 id="dialog-title"></h2>
+  <label for="seat-choice">כמה מנדטים המפלגה תקבל?</label><select id="seat-choice" required></select><p id="dialog-hint" class="muted"></p>
+  <button class="primary" id="confirm-seat">שמירת הבחירה</button>
+  <button type="button" class="threshold-button" id="below-threshold">מתחת לאחוז החסימה</button>
+ </form></dialog>
+</body></html>

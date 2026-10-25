@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: hatov-election-game
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: COMMUNITY_ADMIN_USER
+        sync: false
+      - key: COMMUNITY_ADMIN_PASSWORD
+        sync: false
+      - key: DB_PATH
+        value: /data/game.sqlite
+    disk:
+      name: hatov-election-data
+      mountPath: /data
+      sizeGB: 1

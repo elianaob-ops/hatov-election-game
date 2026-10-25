@@ -1,0 +1,16 @@
+[
+ {"id":"yashar","name":"ישר!","aliases":["ישר","גדי אייזנקוט","אייזנקוט","איזנקוט"],"image":"characters-1.png","x":0,"y":0,"size":"200% 300%"},
+ {"id":"likud","name":"הליכוד","aliases":["ליכוד","בנימין נתניהו","נתניהו","ביבי"],"image":"characters-1.png","x":100,"y":0,"size":"200% 300%"},
+ {"id":"beyachad","name":"ביחד","aliases":["בנט ולפיד","יאיר לפיד ונפתלי בנט","יש עתיד","בנט 2026"],"image":"character-pairs.png","x":0,"y":0,"size":"200% 200%"},
+ {"id":"democrats","name":"הדמוקרטים","aliases":["יאיר גולן","העבודה","מרצ"],"image":"characters-1.png","x":0,"y":100,"size":"200% 300%"},
+ {"id":"yisrael-beitenu","name":"ישראל ביתנו","aliases":["ליברמן","אביגדור ליברמן"],"image":"characters-1.png","x":100,"y":100,"size":"200% 300%"},
+ {"id":"otzma","name":"עוצמה יהודית","aliases":["איתמר בן גביר","בן גביר"],"image":"characters-2.png","x":0,"y":0,"size":"200% 300%"},
+ {"id":"yahadut","name":"יהדות התורה","aliases":["יצחק גולדקנופף","גולדקנופף"],"image":"characters-2.png","x":100,"y":0,"size":"200% 300%"},
+ {"id":"shas","name":"ש״ס","aliases":["שס","אריה דרעי","דרעי"],"image":"characters-2.png","x":0,"y":50,"size":"200% 300%"},
+ {"id":"religious-zionism","name":"הציונות הדתית","aliases":["הציונות הדתית וזהות","סמוטריץ ופייגלין","בצלאל סמוטריץ׳ ומשה פייגלין","זהות"],"image":"character-pairs.png","x":100,"y":0,"size":"200% 200%"},
+ {"id":"raam","name":"רע״ם","aliases":["רעם","מנסור עבאס","יואב סגלוביץ׳","עבאס וסגלוביץ"],"image":"raam-pair.png","x":0,"y":0,"size":"100% 100%"},
+ {"id":"hadash-taal","name":"חד״ש־תע״ל","aliases":["חדש תעל","חד״ש תע״ל","אחמד טיבי ואיימן עודה"],"image":"character-pairs.png","x":100,"y":100,"size":"200% 200%"},
+ {"id":"amcha","name":"עמך ישראל","aliases":["עופר וינטר","וינטר"],"image":"characters-3.png","x":100,"y":50,"size":"200% 300%"},
+ {"id":"reservists","name":"המילואימניקים והכלכלית","aliases":["המילואימניקים","המילואימניקים-הכלכלית","יועז הנדל וירון זליכה"],"image":"character-pairs.png","x":0,"y":100,"size":"200% 200%"},
+ {"id":"haredi-public","name":"הציבור החרדי","aliases":["מוטי לייטנר ונחומי יפה"],"image":"haredi-pair.png","x":0,"y":0,"size":"100% 100%"}
+]
