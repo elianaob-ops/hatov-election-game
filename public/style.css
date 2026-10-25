@@ -31,5 +31,5 @@
 
 .excluded-parties{margin-top:22px;padding-top:18px;border-top:1px solid #dce4d3}.excluded-parties h3{font-size:17px;margin:0 0 5px}.excluded-parties>.muted{margin:0 0 8px}.excluded-list{list-style:none;margin:0;padding:0}.excluded-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #e7ecdf}.excluded-party-art{width:44px;border-radius:9px;opacity:.8}.excluded-party-name{font-size:15px;font-weight:700}.excluded-choice{font-size:12px;text-align:left;color:#6b765e}.excluded-choice small{display:block;font-size:11px}.party-value .party-zero{display:block;padding-top:2px;line-height:1.6}.board-prediction .excluded-parties h3{font-size:15px}@media(max-width:650px){.excluded-row{grid-template-columns:38px minmax(0,1fr) auto;gap:9px}.excluded-party-art{width:38px}.excluded-party-name{font-size:14px}}
 
-/* Community photograph: display the original photo without changing the image file. */
+/* Square illustrated community icon. */
 .brand-icon,.access-icon{object-fit:cover;object-position:50% 50%;border-radius:14px}.brand-icon{border:1px solid #dce4d3}.access-icon{border-radius:24px}
