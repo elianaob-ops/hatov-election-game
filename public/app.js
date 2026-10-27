@@ -12,7 +12,9 @@ function artwork(index){const g=state.game;return state.catalog.find(p=>p.id===g
 function artStyle(c){return c?`background-image:url('/assets/${c.image}?v=20261021');background-size:${c.size};background-position:${c.x}% ${c.y}%`:'';}
 function portrait(c,name,extra=''){return `<div class="portrait ${c?'':'fallback-card'} ${extra}" role="img" aria-label="${esc('איור של '+name)}" style="${artStyle(c)}">${c?'':'✓'}</div>`;}
 function steps(current){return `<div class="steps" aria-label="שלבי המשחק"><span class="step ${current===1?'current':''}" ${current===1?'aria-current="step"':''}>01 · הרשמה</span><span class="step ${current===2?'current':''}" ${current===2?'aria-current="step"':''}>02 · בחירת מנדטים</span></div>`;}
-function locked(){return !!state.game.results||Date.now()>=state.game.deadline;}
+function locked(){return !!state.game.results||state.game.canSubmit===false||(!!state.mine&&Date.now()>=state.game.deadline)||Date.now()>=(state.game.submissionDeadline??state.game.deadline);}
+function resultsReady(){return Date.now()>=(state.game.resultsAvailableAt??state.game.deadline);}
+function formatDeadline(value){return new Date(value).toLocaleString('he-IL',{timeZone:state.config.timeZone,hour12:false});}
 function avatarMarkup(url,name,extra=''){
  const valid=typeof url==='string'&&(/^\/api\/avatars\/[a-f0-9]{48}$/.test(url)||/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/.test(url));
  return `<span class="avatar ${extra}" role="img" aria-label="${esc('תמונת המשתתף '+name)}">${valid?`<img class="avatar-photo" src="${esc(url)}" alt="" loading="lazy">`:''}<span class="avatar-default" ${valid?'hidden':''}><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="14" r="7"></circle><path d="M7 36c0-9 5-14 13-14s13 5 13 14"></path></svg></span></span>`;
@@ -82,7 +84,7 @@ function renderPlay(){
  const values=admin?state.results:state.seats;
  const title=state.tab==='received'?'ההימור שלך על הלוח.':state.tab==='board'?'מי יפגע הכי קרוב?':state.tab==='summary'?'הניחוש שלכם על הלוח.':admin?'התוצאות האמיתיות':'אז איך תיראה הכנסת?';
  const subtitle=state.tab==='received'?'120 מנדטים. עכשיו מחכים לקלפי.':state.tab==='summary'?'המפלגות שבחרתם, מהכי הרבה מנדטים להכי מעט.':state.tab==='board'?'כל המשתתפים בתחרות, במקום אחד.':'לוחצים על הדמויות ובוחרים מספר מנדטים לכל מפלגה.';
- app.innerHTML=steps(2)+heading(title,subtitle)+links()+`<div class="toolbar"><div class="tabs"><button data-tab="guess" class="${state.tab==='guess'?'active':''}">בחירת מנדטים</button>${state.mine?`<button data-tab="summary" class="${state.tab==='summary'?'active':''}">הניחוש ששמרתי</button>`:''}<button data-tab="board" class="${state.tab==='board'?'active':''}">טבלת דירוג</button>${state.account?.role==='admin'?`<button data-tab="admin" class="${admin?'active':''}">הזנת תוצאות</button>`:''}</div><p class="muted"><span id="count">${state.game.count}</span> משתתפים · נעילה: ${esc(new Date(state.game.deadline).toLocaleString('he-IL',{timeZone:state.config.timeZone,hour12:false})+' (שעון ישראל)')}</p></div><div id="play-content"></div>`;
+ app.innerHTML=steps(2)+heading(title,subtitle)+links()+`<div class="toolbar"><div class="tabs"><button data-tab="guess" class="${state.tab==='guess'?'active':''}">בחירת מנדטים</button>${state.mine?`<button data-tab="summary" class="${state.tab==='summary'?'active':''}">הניחוש ששמרתי</button>`:''}<button data-tab="board" class="${state.tab==='board'?'active':''}">טבלת דירוג</button>${state.account?.role==='admin'?`<button data-tab="admin" class="${admin?'active':''}">הזנת תוצאות</button>`:''}</div><p class="muted"><span id="count">${state.game.count}</span> משתתפים · נעילה: ${esc(new Date(state.game.deadline).toLocaleString('he-IL',{timeZone:state.config.timeZone,hour12:false})+' (שעון ישראל)')}${state.game.lateEntriesOpen?'<br>השלמה למי שלא שלח: עד '+esc(formatDeadline(state.game.lateEntryDeadline))+' (שעון ישראל)':''}</p></div><div id="play-content"></div>`;
  bindAvatarFallbacks();
  $('#edit-name').onclick=renderRegistration;
  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;renderPlay();});
@@ -91,8 +93,8 @@ function renderPlay(){
  if(state.tab==='received'&&state.mine)return renderReceipt(content);
  if(state.tab==='board')return renderBoard(content);
  if(state.tab==='summary'&&state.mine)return renderSummary(content);
- const editable=admin?Date.now()>=state.game.deadline:!closed;
- const note=admin?(editable?'הזינו תוצאות סופיות. הסכום הכולל חייב להיות 120.':'ניתן להזין תוצאות אחרי מועד נעילת הניחושים.'):closed?'הניחושים נעולים. אפשר לצפות בניחוש ובטבלת הדירוג.':state.dirty?'יש בחירות שעדיין לא נשמרו. בסיום החלוקה לחצו על שליחת ההימור.':state.mine?'הניחוש שלכם שמור. אפשר לשנות ולשמור מחדש עד הנעילה.':'נחשו את מספר המנדטים הסופי לכל מפלגה. למפלגה שלא עוברת לחצו על ״מתחת לאחוז החסימה״. למפלגה שעוברת בחרו בין 4 ל־120. יש לחלק בדיוק 120 מנדטים כדי לשלוח.';
+ const editable=admin?resultsReady():!closed;
+ const note=admin?(editable?'הזינו תוצאות סופיות. הסכום הכולל חייב להיות 120.':'ניתן להזין תוצאות רק אחרי הנעילה וסיום חלון ההשלמה, אם נפתח.'):closed?'הניחושים נעולים. אפשר לצפות בניחוש ובטבלת הדירוג.':state.game.lateEntriesOpen?'חלון השלמה עד '+formatDeadline(state.game.lateEntryDeadline)+' (שעון ישראל), רק למי שטרם שלח. יש לחלק 120 מנדטים בדיוק. לאחר השליחה ההימור ננעל ולא ניתן לערוך אותו.':state.dirty?'יש בחירות שעדיין לא נשמרו. בסיום החלוקה לחצו על שליחת ההימור.':state.mine?'הניחוש שלכם שמור. אפשר לשנות ולשמור מחדש עד הנעילה.':'נחשו את מספר המנדטים הסופי לכל מפלגה. למפלגה שלא עוברת לחצו על ״מתחת לאחוז החסימה״. למפלגה שעוברת בחרו בין 4 ל־120. יש לחלק בדיוק 120 מנדטים כדי לשלוח.';
  content.innerHTML=`<p class="notice">${esc(note)}</p><div class="party-grid">${state.game.parties.map((name,i)=>`<button class="party-card ${values[i]>0?'selected':'threshold-marked'}" data-party="${i}" ${!editable||state.busy?'disabled':''} aria-label="${esc(name)}: ${values[i]===0?'0 מנדטים, לא עוברת את אחוז החסימה':values[i]+' מנדטים'}, לחצו לבחירה" aria-haspopup="dialog">${portrait(artwork(i),name)}<span class="party-name">${esc(name)}</span><span class="party-value">${values[i]>0?`<strong>${values[i]}</strong>מנדטים`:'<span class="party-zero">0 מנדטים<br>לא עוברת את אחוז החסימה</span>'}</span></button>`).join('')}</div><section class="allocation-bar" aria-label="סיכום המנדטים"><div><div class="remaining"><strong id="remaining-count"></strong><span id="remaining-label">מנדטים נותרו לחלוקה</span></div><p>חולקו <span id="sum"></span> מנדטים</p><div class="progress"><span id="progress"></span></div></div><span class="hint" id="allocation-hint" aria-live="polite"></span><button type="button" id="submit-guesses" class="primary">${state.busy?'שולחים…':admin?'פרסום תוצאות':state.mine?'עדכון ההימור ←':'שליחת ההימור ←'}</button></section>`;
  document.querySelectorAll('[data-party]').forEach(b=>b.onclick=()=>openPicker(Number(b.dataset.party)));
  $('#submit-guesses').onclick=submit;
@@ -134,7 +136,7 @@ function renderBoard(content){
  });
 }
 function renderReceipt(content){
- content.innerHTML=`<section class="panel submission-receipt"><div class="receipt-luck"><img src="/assets/fingers-crossed.png?v=2" alt="מחזיקים אצבעות" decoding="async"></div><div class="eyebrow">120 מתוך 120 מנדטים</div><h2 id="receipt-title" tabindex="-1">הימורך התקבל, נתעדכן בקרוב</h2><p>ההימור שלך נשמר בהצלחה. אפשר לצפות בו ולעדכן אותו עד מועד הנעילה. <span class="receipt-wish">בשורות טובות.</span></p><div class="receipt-actions"><button type="button" class="button" id="receipt-view-summary">צפייה בהימור שלי</button><button type="button" class="secondary" id="receipt-view-board">לטבלת הדירוג</button></div></section>`;
+ content.innerHTML=`<section class="panel submission-receipt"><div class="receipt-luck"><img src="/assets/fingers-crossed.png?v=2" alt="מחזיקים אצבעות" decoding="async"></div><div class="eyebrow">120 מתוך 120 מנדטים</div><h2 id="receipt-title" tabindex="-1">הימורך התקבל, נתעדכן בקרוב</h2><p>ההימור שלך נשמר בהצלחה. ${locked()?'הניחוש נעול לשינויים ואפשר לצפות בו.':'אפשר לצפות בו ולעדכן אותו עד מועד הנעילה.'} <span class="receipt-wish">בשורות טובות.</span></p><div class="receipt-actions"><button type="button" class="button" id="receipt-view-summary">צפייה בהימור שלי</button><button type="button" class="secondary" id="receipt-view-board">לטבלת הדירוג</button></div></section>`;
  $('#receipt-view-summary').onclick=()=>{state.tab='summary';renderPlay();$('#summary-title')?.focus();};
  $('#receipt-view-board').onclick=()=>{state.tab='board';renderPlay();};
 }
@@ -158,10 +160,10 @@ function updateTotal(){
  $('.allocation-bar').classList.toggle('over',sum>120);
  const validRange=validAllocation(values);
  $('#allocation-hint').textContent=!validRange?'יש לבחור 0 או מספר מנדטים שלם בין 4 ל־120.':sum<120?'נשארו '+(120-sum)+' מנדטים לחלוקה':sum>120?'יש להוריד '+(sum-120)+' מנדטים':'כל המנדטים חולקו ✓';
- $('#submit-guesses').disabled=state.busy||!validRange||sum!==120||(admin?Date.now()<state.game.deadline:locked());
+ $('#submit-guesses').disabled=state.busy||!validRange||sum!==120||(admin?!resultsReady():locked());
 }
 function openPicker(index){
- const admin=state.tab==='admin';if(state.busy||(admin?Date.now()<state.game.deadline:locked()))return;
+ const admin=state.tab==='admin';if(state.busy||(admin?!resultsReady():locked()))return;
  state.activeIndex=index;const values=admin?state.results:state.seats,name=state.game.parties[index],c=artwork(index);
  $('#dialog-title').textContent=name;$('#dialog-portrait').setAttribute('style',artStyle(c));$('#dialog-portrait').setAttribute('aria-label','איור של '+name);$('#dialog-portrait').textContent=c?'':'✓';
  $('#seat-choice').innerHTML=Array.from({length:117},(_,index)=>{
@@ -177,7 +179,7 @@ function openPicker(index){
  dialog.showModal();$('#seat-choice').focus();
 }
 function chooseSeat(value){
- const admin=state.tab==='admin';if(state.busy||state.activeIndex===null||(admin?Date.now()<state.game.deadline:locked())){dialog.close();return;}
+ const admin=state.tab==='admin';if(state.busy||state.activeIndex===null||(admin?!resultsReady():locked())){dialog.close();return;}
  if(!Number.isInteger(value)||value<0||value>120||(value>0&&value<4))return;
  const values=admin?state.results:state.seats;values[state.activeIndex]=value;if(!admin)state.dirty=true;
  dialog.close();renderPlay();document.querySelector(`[data-party="${state.activeIndex}"]`)?.focus();
@@ -188,7 +190,7 @@ $('#seat-form').onsubmit=e=>{e.preventDefault();const raw=$('#seat-choice').valu
 dialog.addEventListener('click',e=>{if(e.target===dialog){const b=dialog.getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)dialog.close();}});
 async function submit(){
  const admin=state.tab==='admin',values=admin?state.results:state.seats;
- if(state.busy||!validAllocation(values)||countedTotal(values)!==120||(admin?Date.now()<state.game.deadline:locked()))return;
+ if(state.busy||!validAllocation(values)||countedTotal(values)!==120||(admin?!resultsReady():locked()))return;
  const snapshot=[...values];
  state.busy=true;renderPlay();
  try{
@@ -221,7 +223,7 @@ function renderManage(){
 }
 async function refresh(){
  if(!state.id||!state.game||state.busy||state.stage!=='play')return;
- try{const wasLocked=locked();state.game=await api('games/'+state.id);if(state.stage!=='play')return;if($('#count'))$('#count').textContent=state.game.count;if((state.tab==='board'&&!document.querySelector('.prediction-button[aria-expanded="true"]'))||(!wasLocked&&locked())){if(dialog.open)dialog.close();renderPlay();}else if($('#submit-guesses'))updateTotal();}catch{}
+ try{const wasLocked=locked(),wereResultsReady=resultsReady(),couldSubmit=state.game.canSubmit;state.game=await api('games/'+state.id);if(state.stage!=='play')return;if($('#count'))$('#count').textContent=state.game.count;if((state.tab==='board'&&!document.querySelector('.prediction-button[aria-expanded="true"]'))||(couldSubmit!==state.game.canSubmit)||(wasLocked!==locked())||(state.tab==='admin'&&wereResultsReady!==resultsReady())){if(dialog.open)dialog.close();renderPlay();}else if($('#submit-guesses'))updateTotal();}catch{}
 }
 async function init(){
  try{
