@@ -23,6 +23,7 @@ function decodeAvatar(value){
 }
 const auth=await communityAuth(db);
 const config=JSON.parse(readFileSync(new URL('./public/config.json',import.meta.url)));
+const lateEntryEnd=Date.parse(process.env.LATE_ENTRY_DEADLINE??'2026-10-27T22:00:00+02:00');
 const catalog=JSON.parse(readFileSync(new URL('./public/parties.json',import.meta.url)));
 const normalize=s=>s.replace(/[\s"\u0027״׳־–-]/g,'').toLowerCase();
 const cardFor=name=>catalog.find(p=>[p.name,...p.aliases].some(n=>normalize(n)===normalize(name)))?.id||null;
@@ -48,6 +49,8 @@ if(!db.prepare('SELECT value FROM app_settings WHERE key=?').get('hatov-family-b
 export function validSeats(a,n){return Array.isArray(a)&&a.length===n&&a.every(x=>Number.isInteger(x)&&(x===0||(x>=4&&x<=120)))&&a.reduce((s,x)=>s+x,0)===120;}
 export const validPrediction=validSeats;
 export function score(a,b){return 120-a.reduce((sum,x,i)=>sum+Math.abs(x-b[i]),0)/2;}
+function lateDeadlineFor(game){return game.id===lobbyId&&Number.isFinite(lateEntryEnd)&&lateEntryEnd>game.deadline?lateEntryEnd:null;}
+function savedGuessFor(gameId,playerId){return db.prepare('SELECT g.token FROM guesses g WHERE g.game=? AND (g.token=? OR EXISTS(SELECT 1 FROM guess_profiles gp WHERE gp.game=g.game AND gp.token=g.token AND gp.player_token=?)) LIMIT 1').get(gameId,playerId,playerId);}
 function israelDate(value){
  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))return '';
  const [y,m,d,h,min]=value.match(/\d+/g).map(Number),wall=Date.UTC(y,m-1,d,h,min);
@@ -115,6 +118,12 @@ const server=http.createServer(async(req,res)=>{
  const match=url.pathname.match(/^\/api\/games\/([a-f0-9]{48})(?:\/(guess|results|my-guess|predictions\/([a-f0-9]{48})))?$/);if(!match)return reply(404,{error:'לא נמצא'});
  const game=db.prepare('SELECT * FROM games WHERE id=?').get(match[1]);if(!game)return reply(404,{error:'התחרות לא נמצאה'});
  const parties=JSON.parse(game.parties),results=game.results?JSON.parse(game.results):null;
+ const lateEntryDeadline=lateDeadlineFor(game),now=Date.now();
+ const lateEntriesOpen=!results&&now>=game.deadline&&lateEntryDeadline!==null&&now<lateEntryDeadline;
+ const hasSavedGuess=!!savedGuessFor(game.id,user.id);
+ const canSubmit=!results&&(now<game.deadline||(lateEntriesOpen&&!hasSavedGuess));
+ const submissionDeadline=lateEntriesOpen&&!hasSavedGuess?lateEntryDeadline:game.deadline;
+ const resultsAvailableAt=results?game.deadline:(lateEntryDeadline??game.deadline);
  const predictionsVisible=Date.now()>=game.deadline;
  if(req.method==='GET'&&match[3]){
  if(!predictionsVisible)return reply(403,{error:'אפשר לראות ניחושים של משתתפים אחרים רק אחרי נעילת הניחושים'});
@@ -139,7 +148,7 @@ const server=http.createServer(async(req,res)=>{
  for(const person of participants)if(!savedProfiles.has(person.token))leaderboard.push({name:person.name,score:null,hasGuess:false,avatar:avatarUrl(person)});
  if(results)leaderboard.sort((a,b)=>(b.score??-1)-(a.score??-1));
  const savedCards=db.prepare('SELECT cards FROM game_cards WHERE game=?').get(game.id);
- return reply(200,{id:game.id,title:game.title,parties,cards:savedCards?JSON.parse(savedCards.cards):parties.map(cardFor),deadline:game.deadline,predictionsVisible,results,count:leaderboard.length,submittedCount:rows.length,leaderboard});
+ return reply(200,{id:game.id,title:game.title,parties,cards:savedCards?JSON.parse(savedCards.cards):parties.map(cardFor),deadline:game.deadline,lateEntryDeadline,lateEntriesOpen,submissionDeadline,canSubmit,resultsAvailableAt,predictionsVisible,results,count:leaderboard.length,submittedCount:rows.length,leaderboard});
  }
  if(req.method==='POST'&&match[2]==='my-guess'){
  const owned=db.prepare('SELECT token FROM guess_profiles WHERE game=? AND token=? AND player_token=?').get(game.id,body.token,user.id);
@@ -149,7 +158,7 @@ const server=http.createServer(async(req,res)=>{
  return mine?reply(200,{name:mine.name,seats:JSON.parse(mine.seats)}):reply(404,{error:'עדיין לא נשמר ניחוש'});
  }
  if(req.method==='POST'&&match[2]==='guess'){
- if(Date.now()>=game.deadline||results)return reply(409,{error:'התחרות נעולה לניחושים'});
+ if(!canSubmit)return reply(409,{error:lateEntriesOpen&&hasSavedGuess?'הניחוש שכבר שמרתם נעול. חלון ההשלמה פתוח רק למי שטרם שמר ניחוש.':'התחרות נעולה לניחושים'});
  if(typeof body.name!=='string'||!body.name.trim()||body.name.length>40||!validPrediction(body.seats,parties.length))return reply(400,{error:'יש לבחור 0 או מספר מנדטים שלם בין 4 ל־120, בסכום כולל של 120 בדיוק. למפלגה שלא עוברת את אחוז החסימה בחרו 0.'});
  if(body.playerToken!==undefined&&body.playerToken!==user.id)return reply(403,{error:'אפשר לשמור רק את הניחוש שלכם'});
  const owned=body.token===undefined||body.token===user.id||db.prepare('SELECT token FROM guess_profiles WHERE game=? AND token=? AND player_token=?').get(game.id,body.token,user.id);
@@ -170,7 +179,7 @@ const server=http.createServer(async(req,res)=>{
  }
  if(req.method==='POST'&&match[2]==='results'){
  if(user.role!=='admin')return reply(403,{error:'הפעולה מיועדת למנהלת בלבד'});
- if(Date.now()<game.deadline)return reply(409,{error:'ניתן לפרסם תוצאות רק אחרי מועד הנעילה'});
+ if(Date.now()<resultsAvailableAt)return reply(409,{error:'ניתן לפרסם תוצאות רק אחרי נעילת הניחושים וסיום חלון ההשלמה, אם נפתח'});
  if(!validPrediction(body.seats,parties.length))return reply(400,{error:'יש להזין 0 או מספר מנדטים שלם בין 4 ל־120, בסכום כולל של 120 בדיוק'});
  db.prepare('UPDATE games SET results=? WHERE id=?').run(JSON.stringify(body.seats),game.id);return reply(200,{ok:true});
  }return reply(405,{error:'פעולה לא נתמכת'});
